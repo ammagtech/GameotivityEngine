@@ -12,6 +12,7 @@ import DownloadFileStorageProvider from '../DownloadFileStorageProvider';
 import {
   ensureNoCloudProjectResources,
   moveUrlResourcesToCloudProject,
+  moveUrlResourcesToCloudProjectWithWA,
 } from '../CloudStorageProvider/CloudResourceMover';
 
 const moveNothing = async () => {
@@ -29,13 +30,13 @@ const movers: {
   // (unless they are public URLs).
   [`${CloudStorageProvider.internalName}=>${
     CloudStorageProvider.internalName
-  }`]: moveUrlResourcesToCloudProject,
+  }`]: moveUrlResourcesToCloudProjectWithWA,
   // On the web-app, most resources are public URLs, so nothing to do.
   // But if some resources are coming from a private game template,
   // they need to be copied.
   [`${UrlStorageProvider.internalName}=>${
     CloudStorageProvider.internalName
-  }`]: moveUrlResourcesToCloudProject,
+  }`]: moveUrlResourcesToCloudProjectWithWA,
   // Nothing to move around when going from a project on Google Drive
   // to a cloud project (because only public URLs are supported on Google Drive).
   [`${GoogleDriveStorageProvider.internalName}=>${

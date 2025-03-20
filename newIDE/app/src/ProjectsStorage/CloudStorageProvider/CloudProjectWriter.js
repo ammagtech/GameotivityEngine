@@ -5,9 +5,13 @@ import { type FileMetadata, type SaveAsLocation, type SaveAsOptions } from '..';
 import {
   CLOUD_PROJECT_NAME_MAX_LENGTH,
   commitVersion,
+  commitVersionWithWA,
   createCloudProject,
+  createCloudProjectWithWA,
   getCredentialsForCloudProject,
+  getCredentialsForCloudProjectWithWA,
   updateCloudProject,
+  updateCloudProjectWithWA,
 } from '../../Utils/GDevelopServices/Project';
 import type { $AxiosError } from 'axios';
 import type { MessageDescriptor } from '../../Utils/i18n/MessageDescriptor.flow';
@@ -75,6 +79,34 @@ const zipProjectAndCommitVersion = async ({
   );
   return newVersion;
 };
+const zipProjectAndCommitVersionWithWA = async ({
+  walletAddress,
+  project,
+  cloudProjectId,
+  options,
+}: {|
+  walletAddress: string,
+  project: gdProject,
+  cloudProjectId: string,
+  options?: {| previousVersion?: string, restoredFromVersionId?: string |},
+|}): Promise<?string> => {
+  const [zippedProject, projectJson] = await zipProject(project);
+  const archiveIsSane = await checkZipContent(zippedProject, projectJson);
+  if (!archiveIsSane) {
+    throw new Error('Project compression failed before saving the project.');
+  }
+
+  const newVersion = await retryIfFailed({ times: 2 }, () =>
+    commitVersionWithWA({
+      walletAddress,
+      cloudProjectId,
+      zippedProject,
+      previousVersion: options ? options.previousVersion : null,
+      restoredFromVersionId: options ? options.restoredFromVersionId : null,
+    })
+  );
+  return newVersion;
+};
 
 export const generateOnSaveProject = (
   authenticatedUser: AuthenticatedUser
@@ -88,7 +120,6 @@ export const generateOnSaveProject = (
   const now = Date.now();
 
   if (!fileMetadata.gameId) {
-    console.info('Game id was never set, updating the cloud project.');
     try {
       await updateCloudProject(authenticatedUser, cloudProjectId, {
         gameId,
@@ -98,6 +129,7 @@ export const generateOnSaveProject = (
       // Do not throw, as this is not a blocking error.
     }
   }
+
   const newVersion = await zipProjectAndCommitVersion({
     authenticatedUser,
     project,
@@ -115,7 +147,64 @@ export const generateOnSaveProject = (
     // history to know when to refresh the most recent version).
     lastModifiedDate: now,
   };
-  if (!newVersion) return { wasSaved: false, fileMetadata: newFileMetadata };
+
+  if (!newVersion) {
+    return { wasSaved: false, fileMetadata: newFileMetadata };
+  }
+
+  // Save the version being modified in the file metadata, so that it can be
+  // used when saving to compare with the last version of the project, and
+  // raise a conflict warning if different.
+  newFileMetadata.version = newVersion;
+  return {
+    wasSaved: true,
+    fileMetadata: newFileMetadata,
+  };
+};
+
+export const generateOnSaveProjectWithWA = walletAddress => async (
+  project: gdProject,
+  fileMetadata: FileMetadata,
+  options?: {| previousVersion?: string, restoredFromVersionId?: string |}
+) => {
+  console.log('started save')
+  const cloudProjectId = fileMetadata.fileIdentifier;
+  const gameId = project.getProjectUuid();
+  console.log('not this')
+  const now = Date.now();
+
+  if (!fileMetadata.gameId) {
+    try {
+      await updateCloudProjectWithWA(walletAddress, cloudProjectId, {
+        gameId,
+      });
+    } catch (error) {
+      console.error('Could not update cloud project with gameId', error);
+      // Do not throw, as this is not a blocking error.
+    }
+  }
+
+  const newVersion = await zipProjectAndCommitVersionWithWA({
+    walletAddress,
+    project,
+    cloudProjectId,
+    options,
+  });
+
+  const newFileMetadata: FileMetadata = {
+    ...fileMetadata,
+    gameId,
+    // lastModifiedDate is set here even though it will be set by backend services.
+    // Regarding the list of cloud projects in the build section, it should not have
+    // an impact since the 2 dates are not used for the same purpose.
+    // But it's better to have an up-to-date current file metadata (used by the version
+    // history to know when to refresh the most recent version).
+    lastModifiedDate: now,
+  };
+
+  if (!newVersion) {
+    return { wasSaved: false, fileMetadata: newFileMetadata };
+  }
 
   // Save the version being modified in the file metadata, so that it can be
   // used when saving to compare with the last version of the project, and
@@ -143,6 +232,38 @@ export const generateOnChangeProjectProperty = (
     );
     const newVersion = await zipProjectAndCommitVersion({
       authenticatedUser,
+      project,
+      cloudProjectId: fileMetadata.fileIdentifier,
+    });
+    if (!newVersion) {
+      throw new Error("Couldn't save project following property update.");
+    }
+
+    return { version: newVersion, lastModifiedDate: Date.now() };
+  } catch (error) {
+    // TODO: Determine if a feedback should be given to user so that they can try again if necessary.
+    console.warn(
+      'An error occurred while changing cloud project name. Ignoring.',
+      error
+    );
+    return null;
+  }
+};
+
+export const generateOnChangeProjectPropertyWithWA = walletAddress => async (
+  project: gdProject,
+  fileMetadata: FileMetadata,
+  properties: {| name?: string, gameId?: string |}
+): Promise<null | {| version: string, lastModifiedDate: number |}> => {
+  if (!walletAddress) return null;
+  try {
+    await updateCloudProjectWithWA(
+      walletAddress,
+      fileMetadata.fileIdentifier,
+      properties
+    );
+    const newVersion = await zipProjectAndCommitVersionWithWA({
+      walletAddress,
       project,
       cloudProjectId: fileMetadata.fileIdentifier,
     });
@@ -232,6 +353,65 @@ export const generateOnChooseSaveProjectAsLocation = ({
   };
 };
 
+export const generateOnChooseSaveProjectAsLocationWithWA = ({
+  walletAddress,
+  setDialog,
+  closeDialog,
+}: {|
+  walletAddress: string,
+  setDialog: (() => React.Node) => void,
+  closeDialog: () => void,
+|}) => async ({
+  project,
+  fileMetadata,
+  displayOptionToGenerateNewProjectUuid,
+}: {|
+  project: gdProject,
+  fileMetadata: ?FileMetadata,
+  displayOptionToGenerateNewProjectUuid: boolean,
+|}): Promise<{|
+  saveAsLocation: ?SaveAsLocation,
+  saveAsOptions: ?SaveAsOptions,
+|}> => {
+  // mysticx: Look here if something's not working comment this check
+  if (!walletAddress) {
+    return { saveAsLocation: null, saveAsOptions: null };
+  }
+
+  const options = await new Promise(resolve => {
+    setDialog(() => (
+      <SaveAsOptionsDialog
+        onCancel={() => {
+          closeDialog();
+          resolve(null);
+        }}
+        nameMaxLength={CLOUD_PROJECT_NAME_MAX_LENGTH}
+        nameSuggestion={
+          fileMetadata ? `${project.getName()} - Copy` : project.getName()
+        }
+        displayOptionToGenerateNewProjectUuid={
+          displayOptionToGenerateNewProjectUuid
+        }
+        onSave={options => {
+          closeDialog();
+          resolve(options);
+        }}
+      />
+    ));
+  });
+
+  if (!options) return { saveAsLocation: null, saveAsOptions: null }; // Save was cancelled.
+
+  return {
+    saveAsLocation: {
+      name: options.name,
+    },
+    saveAsOptions: {
+      generateNewProjectUuid: options.generateNewProjectUuid,
+    },
+  };
+};
+
 export const generateOnSaveProjectAs = (
   authenticatedUser: AuthenticatedUser,
   setDialog: (() => React.Node) => void,
@@ -263,6 +443,7 @@ export const generateOnSaveProjectAs = (
       name,
       gameId,
     });
+    console.log('created project: ', cloudProject);
     if (!cloudProject)
       throw new Error('No cloud project was returned from creation api call.');
     const cloudProjectId = cloudProject.id;
@@ -274,14 +455,91 @@ export const generateOnSaveProjectAs = (
 
     // Move the resources to the new project.
     await options.onMoveResources({ newFileMetadata: fileMetadata });
-
+    console.log('getting creds for proj');
     // Commit the changes to the newly created cloud project.
     await getCredentialsForCloudProject(authenticatedUser, cloudProjectId);
+    console.log('zipping proj and commiting version');
+
     const newVersion = await zipProjectAndCommitVersion({
       authenticatedUser,
       project,
       cloudProjectId,
     });
+    console.log('zipped and versioned', newVersion);
+
+    if (!newVersion)
+      throw new Error('No version id was returned from committing api call.');
+
+    // Save the version being modified in the file metadata, so that it can be
+    // used when saving to compare with the last version of the project, and
+    // raise a conflict warning if different.
+    fileMetadata.version = newVersion;
+
+    return {
+      wasSaved: true,
+      fileMetadata,
+    };
+  } catch (error) {
+    console.error('An error occurred while creating a cloud project', error);
+    throw error;
+  }
+};
+export const generateOnSaveProjectAsWithWA = (
+  walletAddress,
+  setDialog,
+  closeDialog
+) => async (
+  project: gdProject,
+  saveAsLocation: ?SaveAsLocation,
+  options: {|
+    onStartSaving: () => void,
+    onMoveResources: ({|
+      newFileMetadata: FileMetadata,
+    |}) => Promise<void>,
+  |}
+) => {
+  if (!saveAsLocation)
+    throw new Error('A location was not chosen before saving as.');
+  const { name } = saveAsLocation;
+  if (!name) throw new Error('A name was not chosen before saving as.');
+  // mysticx: Look here if something's not working comment this check
+  if (!walletAddress) {
+    return { wasSaved: false, fileMetadata: null };
+  }
+  options.onStartSaving();
+
+  const gameId = project.getProjectUuid();
+
+  try {
+    // Create a new cloud project.
+    const cloudProject = await createCloudProjectWithWA(walletAddress, {
+      name,
+      gameId,
+    });
+    console.log('created project: ', cloudProject);
+    if (!cloudProject)
+      throw new Error('No cloud project was returned from creation api call.');
+    const cloudProjectId = cloudProject.id;
+
+    const fileMetadata: FileMetadata = {
+      fileIdentifier: cloudProjectId,
+      gameId,
+    };
+    console.log('save till here')
+    // Move the resources to the new project.
+    await options.onMoveResources({ newFileMetadata: fileMetadata });
+    console.log('now zippinng');
+    // Commit the changes to the newly created cloud project.
+    await getCredentialsForCloudProjectWithWA(walletAddress, cloudProjectId);
+    console.log('zipping proj and commiting version');
+
+    const newVersion = await zipProjectAndCommitVersionWithWA({
+      walletAddress,
+      project,
+      cloudProjectId,
+    });
+    console.log('zipped and versioned', newVersion);
+
     if (!newVersion)
       throw new Error('No version id was returned from committing api call.');
 
@@ -336,7 +594,6 @@ export const renderNewProjectSaveAsLocationChooser = ({
   }
   return null;
 };
-
 export const generateOnAutoSaveProject = (
   authenticatedUser: AuthenticatedUser
 ) =>
@@ -349,6 +606,22 @@ export const generateOnAutoSaveProject = (
         projectCache.put(
           {
             userId: profile.id,
+            cloudProjectId,
+          },
+          project
+        );
+      }
+    : undefined;
+
+export const generateOnAutoSaveProjectWithWA = walletAddress =>
+  ProjectCache.isAvailable()
+    ? async (project: gdProject, fileMetadata: FileMetadata): Promise<void> => {
+        if (!walletAddress) return;
+        const cloudProjectId = fileMetadata.fileIdentifier;
+        const projectCache = getProjectCache();
+        projectCache.put(
+          {
+            userId: walletAddress,
             cloudProjectId,
           },
           project

@@ -8,6 +8,7 @@ import {
 import AuthenticatedUserContext from '../Profile/AuthenticatedUserContext';
 import { type AppArguments } from '../Utils/Window';
 import { type ResourcesActionsMenuBuilder } from '.';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 /**
  * An empty StorageProvider doing nothing.
@@ -90,6 +91,8 @@ const ProjectStorageProviders = (props: Props) => {
     defaultConfiguration.currentStorageProvider
   );
   const authenticatedUser = React.useContext(AuthenticatedUserContext);
+  const { publicKey } = useWallet();
+  const walletAddress = publicKey ? publicKey.toString() : null;
 
   /** Wrapper around setRenderDialog to allow passing a function without confusing React. */
   const setDialog = React.useCallback(
@@ -114,7 +117,8 @@ const ProjectStorageProviders = (props: Props) => {
             {
               setDialog,
               closeDialog,
-              authenticatedUser,
+              // authenticatedUser,
+              walletAddress,
             }
           );
         }
@@ -134,24 +138,29 @@ const ProjectStorageProviders = (props: Props) => {
         {
           setDialog,
           closeDialog,
-          authenticatedUser,
+          // authenticatedUser,
+          walletAddress,
         }
       );
 
       // If the storage provider is unable to open a project, we won't keep it, we just
       // return it for a one time usage (example: DownloadFileStorageProvider).
       const keepForNextOperations = !!storageProviderOperationsToUse.onOpen;
+
       if (keepForNextOperations) {
         currentStorageProvider.current = newStorageProvider;
         storageProviderOperations.current = storageProviderOperationsToUse;
         storageProviderResourceOperations.current = newStorageProvider.createResourceOperations
-          ? newStorageProvider.createResourceOperations({ authenticatedUser })
+          ? newStorageProvider.createResourceOperations({
+              authenticatedUser,
+              walletAddress,
+            })
           : null;
       }
 
       return storageProviderOperationsToUse;
     },
-    [authenticatedUser, setDialog, closeDialog]
+    [authenticatedUser, walletAddress, setDialog, closeDialog]
   );
 
   const getStorageProvider = React.useCallback(() => {
@@ -172,13 +181,17 @@ const ProjectStorageProviders = (props: Props) => {
       storageProviderOperations.current = storageProvider.createOperations({
         setDialog,
         closeDialog,
-        authenticatedUser,
+        // authenticatedUser,
+        walletAddress,
       });
       storageProviderResourceOperations.current = storageProvider.createResourceOperations
-        ? storageProvider.createResourceOperations({ authenticatedUser })
+        ? storageProvider.createResourceOperations({
+            authenticatedUser,
+            walletAddress,
+          })
         : null;
     },
-    [authenticatedUser, setDialog, closeDialog]
+    [authenticatedUser, walletAddress, setDialog, closeDialog]
   );
 
   return (

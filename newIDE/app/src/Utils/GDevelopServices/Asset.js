@@ -2,6 +2,7 @@
 import axios from 'axios';
 import {
   GDevelopAssetApi,
+  GDevelopAssetBypassApi,
   GDevelopPrivateAssetsStorage,
   GDevelopPrivateGameTemplatesStorage,
   GDevelopPublicAssetResourcesStorageBaseUrl,
@@ -226,6 +227,10 @@ export const client = axios.create({
   baseURL: GDevelopAssetApi.baseUrl,
 });
 
+const clientBypass = axios.create({
+  baseURL: GDevelopAssetBypassApi.baseUrl,
+});
+
 export const isAssetPackAudioOnly = (assetPack: PrivateAssetPack): boolean => {
   const contentKeys = Object.keys(assetPack.content);
   return contentKeys.length === 1 && contentKeys[0] === 'audio';
@@ -252,8 +257,8 @@ export const listAllPublicAssets = async ({
 }: {|
   environment: Environment,
 |}): Promise<AllPublicAssets> => {
-  throw new Error('not implemented yet');
-  const response = await client.get(`/asset`, {
+  // throw new Error('not implemented yet');
+  const response = await clientBypass.get(`/asset`, {
     params: {
       environment,
     },
@@ -301,7 +306,7 @@ export const getPublicAsset = async (
   assetShortHeader: AssetShortHeader,
   { environment }: {| environment: Environment |}
 ): Promise<Asset> => {
-  const response = await client.get(`/asset/${assetShortHeader.id}`, {
+  const response = await clientBypass.get(`/asset/${assetShortHeader.id}`, {
     params: {
       environment,
     },
@@ -383,7 +388,7 @@ export const listAllAuthors = ({
 }: {|
   environment: Environment,
 |}): Promise<Array<Author>> => {
-  return client
+  return clientBypass
     .get(`/author`, {
       params: {
         environment,
@@ -403,7 +408,7 @@ export const listAllLicenses = ({
 }: {|
   environment: Environment,
 |}): Promise<Array<License>> => {
-  return client
+  return clientBypass
     .get(`/license`, {
       params: {
         environment,

@@ -1,6 +1,6 @@
 # About GDevelop IDE dependencies (package.json)
 
-some dependencies that can have special requirements.
+GDevelop relies on some dependencies that can have special requirements.
 
 ## Note on TypeScript
 

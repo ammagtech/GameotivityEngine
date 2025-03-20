@@ -65,6 +65,7 @@ import ShopLogo from '../UI/CustomSvgIcons/ShopLogo';
 import ComingSoon from '../UI/CustomSvgIcons/ComingSoon';
 
 type Props = {|
+  ComingSoon?: boolean,
   hideGameTemplates?: boolean, // TODO: if we add more options, use an array instead.
     displayPromotions ?: boolean,
     onOpenPrivateGameTemplateListingData ?: (
@@ -255,7 +256,7 @@ export const AssetStore = React.forwardRef < Props, AssetStoreInterface> (
       [searchText, setSearchText]
     );
 
-    const canShowFiltersPanel =
+    const canShowFiltersPanel = false &&
       !openedAssetShortHeader && // Don't show filters on asset page.
       !openedPrivateAssetPackListingData && // Don't show filters on private asset pack information page.
       !openedPrivateGameTemplateListingData && // Don't show filters on private game template information page.
@@ -691,6 +692,8 @@ return (
 
       <Spacer />
     </>
+    { !hideGameTemplates ? null : (
+    <>
     <Column noMargin>
       <Line justifyContent="space-between" noMargin alignItems="center">
         {(!isOnHomePage || !!openedShopCategory) &&
@@ -779,9 +782,9 @@ return (
           <AssetsHome
             ref={assetsHome}
             publicAssetPacks={publicAssetPacks}
-            privateAssetPackListingDatas={privateAssetPackListingDatas}
+            privateAssetPackListingDatas={[]}
             privateGameTemplateListingDatas={
-              privateGameTemplateListingDatas
+              []
             }
             onPublicAssetPackSelection={selectPublicAssetPack}
             onPrivateAssetPackSelection={selectPrivateAssetPack}
@@ -886,6 +889,8 @@ return (
         </ResponsivePaperOrDrawer>
       )}
     </Line>
+    </>
+  )}
   </Column>
 );
   }

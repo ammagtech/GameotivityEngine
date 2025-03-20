@@ -30,6 +30,8 @@ import { useResponsiveWindowSize } from '../UI/Responsive/ResponsiveWindowMeasur
 import RaisedButton from '../UI/RaisedButton';
 import ResponsiveDelimiter from './ResponsiveDelimiter';
 import Metamask from '../UI/CustomSvgIcons/Metamask';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useMetaMask } from '../Hooks/useMetaMask';
 
 const getStyles = ({ verticalDesign }) => ({
   createAccountContainer: {
@@ -85,6 +87,8 @@ const LoginForm = ({
     setIsForgotPasswordDialogOpen,
   ] = React.useState(false);
 
+  const { connected, account, connect, disconnect, publicKey } = useMetaMask();
+
   // const { address, isConnected } = useAccount()
   // const { connectors, connect, isPending } = useConnect()
   // const { disconnect } = useDisconnect()
@@ -99,24 +103,24 @@ const LoginForm = ({
 
   async function connectMetaMask() {
     if (window.ethereum) {
-        try {
-            // Request account access
-            const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-            console.log("Connected account:", accounts[0]);
-            
-            // Create a provider
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            
-            console.log("Wallet connected with address:", await signer.getAddress());
-            return signer;
-        } catch (error) {
-            console.error("Error connecting to MetaMask:", error);
-        }
+      try {
+        // Request account access
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        console.log("Connected account:", accounts[0]);
+
+        // Create a provider
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+
+        console.log("Wallet connected with address:", await signer.getAddress());
+        return signer;
+      } catch (error) {
+        console.error("Error connecting to MetaMask:", error);
+      }
     } else {
-        console.log("MetaMask is not installed. Please install MetaMask to use this feature.");
+      console.log("MetaMask is not installed. Please install MetaMask to use this feature.");
     }
-}
+  }
 
   return (
     <>
@@ -151,18 +155,21 @@ const LoginForm = ({
                       }}
                       disabled={loginInProgress}
                     /> */}
-                    <FlatButton
+                    {/* <FlatButton
                       style={{ backgroundColor: 'white', color: 'black', width: 270, height: 35, }} //hsnaw
                       primary
                       fullWidth
                       label={<Trans>Continue with Metamask</Trans>}
                       leftIcon={<Metamask style={styles.icon} />}
                       onClick={() => {
-                        connectMetaMask()
+                        connect()
                         // onLoginWithProvider('github');
                       }}
                       disabled={loginInProgress}
-                    />
+                    /> */}
+                    <WalletMultiButton style={{ backgroundColor: 'white', color: 'black', width: 270, height: 35, }} >
+                      {connected ? "Disconnect" : "Connect"}
+                    </WalletMultiButton>
                     {/* <div>
                       {connectors.map((connector) => (
                         <button

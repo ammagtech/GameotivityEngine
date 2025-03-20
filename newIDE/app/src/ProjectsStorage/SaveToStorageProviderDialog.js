@@ -28,7 +28,6 @@ const SaveToStorageProviderDialog = ({
   const authenticatedUser = React.useContext(AuthenticatedUserContext);
 
   const { profile, cloudProjects } = authenticatedUser;
-
   const isLoadingCloudProjects = !!profile && !cloudProjects;
   const isCloudProjectsMaximumReached = checkIfHasTooManyCloudProjects(
     authenticatedUser
@@ -51,7 +50,9 @@ const SaveToStorageProviderDialog = ({
     >
       <List useGap>
         {storageProviders
-          .filter(storageProvider => !storageProvider.hiddenInSaveDialog && storageProvider.internalName !== 'Cloud')
+          .filter(storageProvider => !storageProvider.hiddenInSaveDialog 
+            // && storageProvider.internalName !== 'Cloud'
+          )
           .map(storageProvider => (
             <React.Fragment key={storageProvider.internalName}>
               <StorageProviderListItem

@@ -141,19 +141,20 @@ const ExampleStore = ({
     () => {
       return getExampleAndTemplateTiles({
         receivedGameTemplates,
-        privateGameTemplateListingDatas: privateGameTemplateListingDatasSearchResults
-          ? privateGameTemplateListingDatasSearchResults
-              .map(({ item }) => item)
-              .filter(
-                privateGameTemplateListingData =>
-                  !onlyShowGames || gameFilter(privateGameTemplateListingData)
-              )
-              .filter(
-                privateGameTemplateListingData =>
-                  !hideStartingPoints ||
-                  noStartingPointFilter(privateGameTemplateListingData)
-              )
-          : [],
+        privateGameTemplateListingDatas: [],
+        // privateGameTemplateListingDatas: privateGameTemplateListingDatasSearchResults
+        //   ? privateGameTemplateListingDatasSearchResults
+        //       .map(({ item }) => item)
+        //       .filter(
+        //         privateGameTemplateListingData =>
+        //           !onlyShowGames || gameFilter(privateGameTemplateListingData)
+        //       )
+        //       .filter(
+        //         privateGameTemplateListingData =>
+        //           !hideStartingPoints ||
+        //           noStartingPointFilter(privateGameTemplateListingData)
+        //       )
+        //   : [],
         exampleShortHeaders: exampleShortHeadersSearchResults
           ? exampleShortHeadersSearchResults
               .map(({ item }) => item)

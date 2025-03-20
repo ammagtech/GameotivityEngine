@@ -16,6 +16,10 @@ import { useResponsiveWindowSize } from '../Responsive/ResponsiveWindowMeasurer'
 import IconButton from '../IconButton';
 import FlatButton from '../FlatButton';
 import { useMetaMask } from '../../Hooks/useMetaMask';
+import {
+  WalletDisconnectButton,
+  WalletMultiButton,
+} from '@solana/wallet-adapter-react-ui';
 
 const styles = {
   buttonContainer: { flexShrink: 0 },
@@ -56,13 +60,13 @@ const UserChip = ({ onOpenProfile }: Props) => {
     loginState,
     subscription,
   } = authenticatedUser;
-  const { isConnected, account, connect, disconnect } = useMetaMask();
+  const { connected, account, connect, disconnect, publicKey } = useMetaMask();
 
-  const truncateAddress = (address) => {
+  const truncateAddress = address => {
     if (!address) return '';
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
-  
+
   const isPremium = hasValidSubscriptionPlan(subscription);
   const { isMobile } = useResponsiveWindowSize();
 
@@ -115,26 +119,36 @@ const UserChip = ({ onOpenProfile }: Props) => {
           onClick={onOpenCreateAccountDialog}
           primary
         /> */}
-        {!isConnected ? (
-        <FlatButton
-          label={<span><Trans>Connect Wallet</Trans></span>}
-          onClick={connect}
-          primary
-        />
-      ) : (
-        <LineStackLayout noMargin alignItems="center">
-          <FlatButton
-            label={<span>{truncateAddress(account)}</span>}
-            primary
-            disabled
-          />
-          <FlatButton
-            label={<span><Trans>Disconnect</Trans></span>}
-            onClick={disconnect}
-            style={{ marginLeft: 8 }}
-          />
-        </LineStackLayout>
-      )}
+        {!connected ? (
+          // <FlatButton
+          //   label={<span><Trans>Connect Wallet</Trans></span>}
+          //   onClick={connect}
+          //   primary
+          // />
+          <WalletMultiButton
+            onClick={connect}
+            style={{ height: 28, borderRadius: 8 }}
+          >
+            {connected ? 'Disconnect' : 'Connect Wallet'}
+          </WalletMultiButton>
+        ) : (
+          // {/* // <WalletDisconnectButton /> */}
+          <LineStackLayout noMargin alignItems="center">
+            <FlatButton
+              label={<span>{truncateAddress(publicKey?.toBase58())}</span>}
+              primary
+              disabled
+            />
+            {/* <FlatButton
+              label={<span><Trans>Disconnect</Trans></span>}
+              onClick={disconnect}
+              style={{ marginLeft: 8 }}
+            /> */}
+            <WalletDisconnectButton
+              style={{ height: 28, width: 175, borderRadius: 8 }}
+            />
+          </LineStackLayout>
+        )}
       </LineStackLayout>
     </div>
   );

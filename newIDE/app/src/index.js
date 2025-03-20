@@ -16,6 +16,15 @@ import VersionMetadata from './Version/VersionMetadata';
 import { loadPreferencesFromLocalStorage } from './MainFrame/Preferences/PreferencesProvider';
 import { getFullTheme } from './UI/Theme';
 
+import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { BackpackWalletAdapter } from '@solana/wallet-adapter-backpack';
+import { WalletDisconnectButton, WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { clusterApiUrl } from '@solana/web3.js';
+import { Buffer } from 'buffer';
+import '@solana/wallet-adapter-react-ui/styles.css';
+window.Buffer = Buffer;
+
 const GD_STARTUP_TIMES = global.GD_STARTUP_TIMES || [];
 
 // No i18n in this file
@@ -43,7 +52,7 @@ try {
     });
     color = theme.muiTheme.palette.background.default;
   }
-} catch {}
+} catch { }
 
 document.getElementsByTagName('body')[0].style.backgroundColor = color;
 
@@ -64,7 +73,7 @@ const styles = {
 
 type State = {|
   loadingMessage: string,
-  App: ?Element<*>,
+    App: ?Element <*>,
 |};
 
 class Bootstrapper extends Component<{}, State> {
@@ -75,12 +84,14 @@ class Bootstrapper extends Component<{}, State> {
   authentication = new Authentication();
 
   componentDidMount() {
+
+
     installAnalyticsEvents();
     GD_STARTUP_TIMES.push(['bootstrapperComponentDidMount', performance.now()]);
 
     // Load GDevelop.js, ensuring a new version is fetched when the version changes.
     loadScript(
-      `./libGD.js`//?cache-buster=${VersionMetadata.versionWithHash}`
+      `./libGD.js?cache-buster=${VersionMetadata.versionWithHash}`
     ).then(() => {
       GD_STARTUP_TIMES.push(['libGDLoadedTime', performance.now()]);
       const initializeGDevelopJs = global.initializeGDevelopJs;
@@ -100,7 +111,7 @@ class Bootstrapper extends Component<{}, State> {
           // the path to the file.
           // Plus, on Electron, the prefix seems to be pointing to the root of the
           // app.asar archive, which is completely wrong.
-          return path + ``;
+          return path + `?cache-buster=${VersionMetadata.versionWithHash}`;
         },
       }).then(gd => {
         global.gd = gd;
@@ -133,6 +144,8 @@ class Bootstrapper extends Component<{}, State> {
     }, this.handleEditorLoadError);
   }
 
+
+
   handleEditorLoadError = rawError => {
     const message = !electron
       ? 'Please check your internet connectivity, close the tab and reopen it.'
@@ -151,13 +164,26 @@ class Bootstrapper extends Component<{}, State> {
   render() {
     const { App, loadingMessage } = this.state;
 
+    const endpoint = clusterApiUrl(WalletAdapterNetwork.Mainnet);
+    const wallets = [new BackpackWalletAdapter()];
+
     return (
-      <React.Fragment>
-        {App}
-        {loadingMessage && (
-          <div style={styles.loadingMessage}>{loadingMessage}</div>
-        )}
-      </React.Fragment>
+      <ConnectionProvider endpoint={endpoint}>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletModalProvider>
+            
+            <React.Fragment>
+              {App}
+              {loadingMessage && (
+                <div style={styles.loadingMessage}>{loadingMessage}</div>
+              )}
+            </React.Fragment>
+            { /* Your app's components go here, nested within the context providers. */}
+          </WalletModalProvider>
+
+        </WalletProvider>
+      </ConnectionProvider>
+
     );
   }
 }

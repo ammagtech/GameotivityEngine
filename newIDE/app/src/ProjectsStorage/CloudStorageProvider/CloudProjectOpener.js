@@ -3,7 +3,9 @@
 import { t } from '@lingui/macro';
 import {
   getCloudProject,
+  getCloudProjectWithWA,
   getCredentialsForCloudProject,
+  getCredentialsForCloudProjectWithWA,
   getOtherUserCloudProject,
   getProjectFileAsZipBlob,
 } from '../../Utils/GDevelopServices/Project';
@@ -85,6 +87,81 @@ export const generateOnOpen = (authenticatedUser: AuthenticatedUser) => async (
 
   onProgress && onProgress((2 / 4) * 100, t`Starting engine`);
   await getCredentialsForCloudProject(authenticatedUser, cloudProjectId);
+  onProgress && onProgress((3 / 4) * 100, t`Checking tools`);
+  const zippedSerializedProject = await getProjectFileAsZipBlob(
+    cloudProject,
+    fileMetadata.version
+  );
+  onProgress && onProgress((4 / 4) * 100, t`Opening portal`);
+  // Reading only the first entry since the zip should only contain the project json file
+  try {
+    const serializedProject = await unzipFirstEntryOfBlob(
+      zippedSerializedProject
+    );
+    return {
+      content: JSON.parse(serializedProject),
+    };
+  } catch (error) {
+    throw new CloudProjectReadingError();
+  }
+};
+
+export const generateOnOpenWithWA = (walletAddress: string) => async (
+  fileMetadata: FileMetadata,
+  onProgress?: (progress: number, message: MessageDescriptor) => void
+): Promise<{|
+  content: Object,
+|}> => {
+  const cloudProjectId = fileMetadata.fileIdentifier;
+
+  if (cloudProjectId.startsWith(CLOUD_PROJECT_AUTOSAVE_PREFIX)) {
+    if (!ProjectCache.isAvailable()) {
+      throw new Error('Cache is not available.');
+    }
+    // const { profile } = authenticatedUser;
+    // if (!profile) {
+    //   throw new Error(
+    //     'User seems to not be logged in. Cannot retrieve autosaved file from cache.'
+    //   );
+    // }
+    if (!walletAddress) {
+      throw new Error(
+        'User seems to not be logged in. Cannot retrieve autosaved file from cache.'
+      );
+    }
+    const cloudProjectId = fileMetadata.fileIdentifier.replace(
+      CLOUD_PROJECT_AUTOSAVE_PREFIX,
+      ''
+    );
+    const projectCache = getProjectCache();
+    const project = await projectCache.get({
+      userId: walletAddress,
+      cloudProjectId,
+    });
+    if (!project) {
+      throw new Error(
+        `Could not find cache entry for project id ${cloudProjectId}.`
+      );
+    }
+    await getCredentialsForCloudProjectWithWA(walletAddress, cloudProjectId);
+    return { content: JSON.parse(project) };
+  }
+
+  onProgress && onProgress((1 / 4) * 100, t`Calibrating sensors`);
+  let cloudProject;
+  if (fileMetadata.ownerId) {
+    cloudProject = await getOtherUserCloudProject(
+      // authenticatedUser,
+      cloudProjectId,
+      fileMetadata.ownerId
+    );
+  } else {
+    cloudProject = await getCloudProjectWithWA(walletAddress, cloudProjectId);
+  }
+  if (!cloudProject) throw new Error("Cloud project couldn't be fetched.");
+
+  onProgress && onProgress((2 / 4) * 100, t`Starting engine`);
+  await getCredentialsForCloudProjectWithWA(walletAddress, cloudProjectId);
   onProgress && onProgress((3 / 4) * 100, t`Checking tools`);
   const zippedSerializedProject = await getProjectFileAsZipBlob(
     cloudProject,

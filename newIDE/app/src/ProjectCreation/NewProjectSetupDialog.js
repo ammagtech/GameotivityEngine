@@ -182,6 +182,8 @@ const NewProjectSetupDialog = ({
     : '';
   const [storageProvider, setStorageProvider] = React.useState<StorageProvider>(
     () => {
+      // TODO: remove this hack when the storage provider is correctly set in the preferences
+      return emptyStorageProvider;
       const localFileStorageProvider = storageProviders.find(
         ({ internalName }) => internalName === 'LocalFile'
       );
@@ -594,7 +596,8 @@ const NewProjectSetupDialog = ({
                   maxLength={CLOUD_PROJECT_NAME_MAX_LENGTH}
                   fullWidth
                 />
-                <SelectField
+                {/* /TODO uncomment when selection is  needed */}
+                {/* <SelectField
                   fullWidth
                   disabled={isLoading}
                   floatingLabelText={<Trans>Where to store this project</Trans>}
@@ -635,7 +638,7 @@ const NewProjectSetupDialog = ({
                       label={t`Don't save this project now`}
                     />
                   )}
-                </SelectField>
+                </SelectField> */}
                 {!needUserAuthenticationForStorage &&
                   storageProvider.renderNewProjectSaveAsLocationChooser &&
                   storageProvider.renderNewProjectSaveAsLocationChooser({

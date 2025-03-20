@@ -99,6 +99,12 @@ export const GDevelopAssetApi = {
     : 'https://gameotivity-preview-be.ammag.tech/asset',
 };
 
+export const GDevelopAssetBypassApi = {
+  baseUrl: isDev
+    ? 'https://gdcorebypassbe.ammag.tech/asset'
+    : 'https://gdcorebypassbe.ammag.tech/asset',
+};
+
 export const GDevelopAnalyticsApi = {
   baseUrl: isDev
     ? 'https://gdcorebypassbe.ammag.tech/analytics'
@@ -125,8 +131,8 @@ export const GDevelopPlayApi = {
 
 export const GDevelopShopApi = {
   baseUrl: isDev
-    ? 'https://gdcorebypassbe.ammag.tech/shoptemp'
-    : 'https://gdcorebypassbe.ammag.tech/shoptemp',
+    ? 'https://gdcorebypassbe.ammag.tech/shop'
+    : 'https://gdcorebypassbe.ammag.tech/shop',
 };
 
 export const GDevelopProjectApi = {
@@ -143,8 +149,8 @@ export const GDevelopGenerationApi = {
 
 export const GDevelopProjectResourcesStorage = {
   baseUrl: isDev
-    ? 'https://project-resources-dev.gdevelop.io'
-    : 'https://project-resources.gdevelop.io',
+    ? 'https://gameotivity-preview-be.ammag.tech/project-resources'
+    : 'https://gameotivity-preview-be.ammag.tech/project-resources',
 };
 
 export const GDevelopPrivateAssetsStorage = {

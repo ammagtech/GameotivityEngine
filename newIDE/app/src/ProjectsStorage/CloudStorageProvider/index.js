@@ -11,6 +11,11 @@ import {
   renderNewProjectSaveAsLocationChooser,
   getProjectLocation,
   generateOnAutoSaveProject,
+  generateOnSaveProjectWithWA,
+  generateOnChangeProjectPropertyWithWA,
+  generateOnChooseSaveProjectAsLocationWithWA,
+  generateOnSaveProjectAsWithWA,
+  generateOnAutoSaveProjectWithWA,
 } from './CloudProjectWriter';
 import {
   type AppArguments,
@@ -22,6 +27,7 @@ import {
   generateOnEnsureCanAccessResources,
   generateGetAutoSaveCreationDate,
   generateOnGetAutoSave,
+  generateOnOpenWithWA,
 } from './CloudProjectOpener';
 import Cloud from '../../UI/CustomSvgIcons/Cloud';
 import { generateGetResourceActions } from './CloudProjectResourcesHandler';
@@ -31,6 +37,7 @@ import {
 } from '../../UI/Alert/AlertContext';
 import {
   getCloudProject,
+  getCloudProjectWithWA,
   type CloudProjectWithUserAccessInfo,
 } from '../../Utils/GDevelopServices/Project';
 import { format } from 'date-fns';
@@ -48,10 +55,12 @@ const isURL = (filename: string) => {
 
 export default ({
   internalName: 'Cloud',
-  name: t`GDevelop Cloud`,
+  name: t`Cloud`,
   renderIcon: props => <Cloud fontSize={props.size} />,
-  hiddenInOpenDialog: true,
-  needUserAuthentication: true,
+  // hiddenInOpenDialog: true,
+  // needUserAuthentication: true,
+  hiddenInOpenDialog: false,
+  needUserAuthentication: false,
   getFileMetadataFromAppArguments: (appArguments: AppArguments) => {
     if (!appArguments[POSITIONAL_ARGUMENTS_KEY]) return null;
     if (!appArguments[POSITIONAL_ARGUMENTS_KEY].length) return null;
@@ -65,26 +74,57 @@ export default ({
   },
   getProjectLocation: getProjectLocation,
   renderNewProjectSaveAsLocationChooser: renderNewProjectSaveAsLocationChooser,
-  createOperations: ({ setDialog, closeDialog, authenticatedUser }) => ({
-    onOpen: generateOnOpen(authenticatedUser),
+  // createOperations: ({ setDialog, closeDialog, authenticatedUser }) => ({
+  //   onOpen: generateOnOpen(authenticatedUser),
+  //   onEnsureCanAccessResources: generateOnEnsureCanAccessResources(
+  //     authenticatedUser
+  //   ),
+  //   onSaveProject: generateOnSaveProject(authenticatedUser),
+  //   onChooseSaveProjectAsLocation: generateOnChooseSaveProjectAsLocation({
+  //     authenticatedUser,
+  //     setDialog,
+  //     closeDialog,
+  //   }),
+  //   onSaveProjectAs: generateOnSaveProjectAs(
+  //     authenticatedUser,
+  //     setDialog,
+  //     closeDialog
+  //   ),
+  //   onAutoSaveProject: generateOnAutoSaveProject(authenticatedUser),
+  //   getAutoSaveCreationDate: generateGetAutoSaveCreationDate(authenticatedUser),
+  //   onGetAutoSave: generateOnGetAutoSave(authenticatedUser),
+  //   onChangeProjectProperty: generateOnChangeProjectProperty(authenticatedUser),
+  //   getOpenErrorMessage: (error: Error): MessageDescriptor => {
+  //     return t`An error occurred when opening the project. Check that your internet connection is working and that your browser allows the use of cookies.`;
+  //   },
+  //   getWriteErrorMessage,
+  //   canFileMetadataBeSafelySaved: async (
+  //     fileMetadata: FileMetadata,
+  //     actions: {|
+  //       showAlert: ShowAlertFunction,
+  //       showConfirmation: ShowConfirmFunction,
+  //     |}
+  //   )
+  createOperations: ({ setDialog, closeDialog, walletAddress }) => ({
+    onOpen: generateOnOpenWithWA(walletAddress),
     onEnsureCanAccessResources: generateOnEnsureCanAccessResources(
-      authenticatedUser
+      walletAddress
     ),
-    onSaveProject: generateOnSaveProject(authenticatedUser),
-    onChooseSaveProjectAsLocation: generateOnChooseSaveProjectAsLocation({
-      authenticatedUser,
+    onSaveProject: generateOnSaveProjectWithWA(walletAddress),
+    onChooseSaveProjectAsLocation: generateOnChooseSaveProjectAsLocationWithWA({
+      walletAddress,
       setDialog,
       closeDialog,
     }),
-    onSaveProjectAs: generateOnSaveProjectAs(
-      authenticatedUser,
+    onSaveProjectAs: generateOnSaveProjectAsWithWA(
+      walletAddress,
       setDialog,
       closeDialog
     ),
-    onAutoSaveProject: generateOnAutoSaveProject(authenticatedUser),
-    getAutoSaveCreationDate: generateGetAutoSaveCreationDate(authenticatedUser),
-    onGetAutoSave: generateOnGetAutoSave(authenticatedUser),
-    onChangeProjectProperty: generateOnChangeProjectProperty(authenticatedUser),
+    onAutoSaveProject: generateOnAutoSaveProjectWithWA(walletAddress),
+    getAutoSaveCreationDate: generateGetAutoSaveCreationDate(walletAddress),
+    onGetAutoSave: generateOnGetAutoSave(walletAddress),
+    onChangeProjectProperty: generateOnChangeProjectPropertyWithWA(walletAddress),
     getOpenErrorMessage: (error: Error): MessageDescriptor => {
       return t`An error occurred when opening the project. Check that your internet connection is working and that your browser allows the use of cookies.`;
     },
@@ -102,8 +142,12 @@ export default ({
       // the user and ask them if they want to overwrite the changes.
       const cloudProjectId = fileMetadata.fileIdentifier;
       const openedProjectVersion = fileMetadata.version;
-      const cloudProject: ?CloudProjectWithUserAccessInfo = await getCloudProject(
-        authenticatedUser,
+      // const cloudProject: ?CloudProjectWithUserAccessInfo = await getCloudProject(
+      //   authenticatedUser,
+      //   cloudProjectId
+      // );
+      const cloudProject: ?CloudProjectWithUserAccessInfo = await getCloudProjectWithWA(
+        walletAddress,
         cloudProjectId
       );
       if (!cloudProject) {

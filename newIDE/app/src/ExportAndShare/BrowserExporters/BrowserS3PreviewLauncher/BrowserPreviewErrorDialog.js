@@ -53,9 +53,7 @@ export default class BrowserPreviewErrorDialog extends Component<Props> {
                 <Text>
                   <Trans>
                     Make sure you're online, have a proper internet connection
-                    and try again. If you download and use GDevelop desktop
-                    application, you can also run previews without any internet
-                    connection.
+                    and try again.
                   </Trans>
                 </Text>
               </Column>

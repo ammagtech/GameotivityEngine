@@ -12,11 +12,13 @@ import { Column, Line } from '../../UI/Grid';
 import Text from '../../UI/Text';
 import {
   getLastVersionsOfProject,
+  getLastVersionsOfProjectWithWA,
   isCloudProjectVersionSane,
   type ExpandedCloudProjectVersion,
 } from '../../Utils/GDevelopServices/Project';
 import FlatButton from '../../UI/FlatButton';
 import { sendCloudProjectCouldNotBeOpened } from '../../Utils/Analytics/EventSender';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 const DELAY_TO_READ_DIALOG_IN_MS = 15000;
 
@@ -32,6 +34,8 @@ const CloudProjectRecoveryDialog = ({
   onOpenPreviousVersion,
 }: Props) => {
   const authenticatedUser = React.useContext(AuthenticatedUserContext);
+  const { publicKey } = useWallet();
+  const walletAddress = publicKey?.toString();
   const { profile } = authenticatedUser;
   const [
     lastSaneVersion,
@@ -59,8 +63,12 @@ const CloudProjectRecoveryDialog = ({
   React.useEffect(
     () => {
       const getVersions = async () => {
-        const lastVersions = await getLastVersionsOfProject(
-          authenticatedUser,
+        // const lastVersions = await getLastVersionsOfProject(
+        //   authenticatedUser,
+        //   cloudProjectId
+        // );
+        const lastVersions = await getLastVersionsOfProjectWithWA(
+          walletAddress,
           cloudProjectId
         );
         if (!lastVersions) {

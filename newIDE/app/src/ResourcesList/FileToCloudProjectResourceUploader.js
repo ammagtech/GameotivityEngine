@@ -23,6 +23,7 @@ import Paper from '../UI/Paper';
 import GDevelopThemeContext from '../UI/Theme/GDevelopThemeContext';
 import RaisedButton from '../UI/RaisedButton';
 import { useMetaMask } from '../Hooks/useMetaMask'
+import { useWallet } from '@solana/wallet-adapter-react';
 
 type FileToCloudProjectResourceUploaderProps = {
   options: ChooseResourceOptions,
@@ -100,6 +101,7 @@ export const FileToCloudProjectResourceUploader = ({
     getStorageProvider,
   ]);
   const { isConnected, account, connect, disconnect } = useMetaMask();
+  const { connected, publicKey } = useWallet();
   const cloudProjectId = fileMetadata ? fileMetadata.fileIdentifier : null;
   const [uploadProgress, setUploadProgress] = React.useState(0);
   const onUpload = React.useCallback(
@@ -113,7 +115,7 @@ export const FileToCloudProjectResourceUploader = ({
         setError(null);
         setUploadProgress(0);
         const results: UploadedProjectResourceFiles = await uploadProjectResourceFilesByWalletAddress(
-          account,
+          publicKey,
           selectedFiles,
           (current: number, total: number) => {
             setUploadProgress((current / total) * 100);
@@ -166,7 +168,7 @@ export const FileToCloudProjectResourceUploader = ({
     storageProvider.internalName === 'Cloud' && !!fileMetadata;
   // const isConnected = !!authenticatedUser.authenticated;
   const canChooseFiles =
-    !isUploading && isConnected //&& canUploadWithThisStorageProvider;
+    !isUploading && connected //&& canUploadWithThisStorageProvider;
 
   // Automatically open the input once, at the first render, if asked.
   React.useLayoutEffect(
@@ -221,7 +223,7 @@ export const FileToCloudProjectResourceUploader = ({
 
   return (
     <ColumnStackLayout noMargin>
-      {!isConnected ? (
+      {!connected ? (
         <AlertMessage kind="warning">
           <Trans>
             Your need to first connect wallet, to upload your own

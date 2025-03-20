@@ -13,6 +13,9 @@ import { type ExportFlowProps } from '../ExportPipeline.flow';
 import Axios from 'axios';
 import Link from '../../UI/Link';
 import TextField from '../../UI/TextField';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { Program, AnchorProvider } from '@coral-xyz/anchor';
+import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
 
 // const getIconStyle = ({ isMobile }: {| isMobile: boolean |}) => {
 //   return {
@@ -29,7 +32,7 @@ export const ExplanationHeader = () => {
     <Column noMargin>
       <Line>
         <Text align="center">
-          <Trans>
+        <Trans>
           This will export and deploy your game to our secure hosting service, then automatically configure it anyone can play it.
           </Trans>
         </Text>
@@ -54,11 +57,7 @@ export const ExportFlow = ({
     <Line justifyContent="center">
       <RaisedButton
         label={
-          !isExporting ? (
-            <Trans>Build game</Trans>
-          ) : (
-            <Trans>Building...</Trans>
-          )
+          !isExporting ? <Trans>Build game</Trans> : <Trans>Building...</Trans>
         }
         primary
         id={`launch-export-${exportPipelineName}-button`}
@@ -70,7 +69,7 @@ export const ExportFlow = ({
 
 export const DoneFooter = ({
   renderGameButton,
-  gameLink
+  gameLink,
 }: {|
   renderGameButton: () => React.Node,
 |}) => {
@@ -80,17 +79,18 @@ export const DoneFooter = ({
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [success, setSuccess] = React.useState(false);
+  const wallet = useWallet();
 
-  const handleThumbnailChange = (event) => {
+  const handleThumbnailChange = event => {
     setGameThumbnail(event.target.files[0]);
   };
 
-  const uploadGameDetails = () => {
+  const uploadGameDetails = async () => {
     setError(null);
     setLoading(true);
-    // check if game name, description and thumbnail are set
+
     if (!gameName || !gameDescription || !gameThumbnail) {
-      setError("Please complete all fields");
+      setError('Please complete all fields');
       setLoading(false);
       return;
     }
@@ -101,31 +101,32 @@ export const DoneFooter = ({
     formData.append('GameThumbnail', gameThumbnail);
     formData.append('GameURL', gameLink);
 
-    Axios.post(`${ProjectApi.baseUrl}/publish`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+       Axios.post(`${ProjectApi.baseUrl}/publish`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
       .then((response) => {
         console.log(response);
-        setLoading(false);
-        setSuccess(true);
-      })
-      .catch((error) => {
-        if (error.response && (error.response.status === 400 || error.response.status === 500)) {
-          setError("Please check your input fields, ensure they are correct");
-        } else {
-          setError(error.message);
-        }
-        console.log(error);
-        setLoading(false);
-      });
-  };
+      setLoading(false);
+      setSuccess(true);
+    })
+    .catch((error) => {
+      if (error.response && (error.response.status === 400 || error.response.status === 500)) {
+        setError("Please check your input fields, ensure they are correct");
+      } else {
+        setError(error.message);
+      }
+      console.log(error);
+      setLoading(false);
+    });
+};
+
 
   return (
     <Column noMargin alignItems="center">
-      <ColumnStackLayout noMargin justifyContent="center" alignItems="center">
-        <Text>
+       <ColumnStackLayout noMargin justifyContent="center" alignItems="center">
+       <Text>
           <Trans>Done!</Trans>
         </Text>
         <Spacer />
@@ -171,11 +172,7 @@ export const DoneFooter = ({
             onChange={handleThumbnailChange}
           />
           <Spacer />
-          {error && (
-            <AlertMessage kind="error">
-              {error}
-            </AlertMessage>
-          )}
+          {error && <AlertMessage kind="error">{error}</AlertMessage>}
           <Spacer />
           <Line justifyContent="center">
             <RaisedButton
@@ -189,10 +186,10 @@ export const DoneFooter = ({
       )}
       {success && (
         <Column>
-          {/* <Check /> */}
           <Text size="sub-title" style={{ textAlign: 'center', marginTop: 10 }}>
           <Trans>Congratulations! Your game has been successfully published and is now available in the Play tab.</Trans>
           </Text>
+          
         </Column>
       )}
     </Column>

@@ -40,6 +40,7 @@ import Add from '../UI/CustomSvgIcons/Add';
 import {
   getLastModifiedInfoByProjectId,
   useProjectsListFor,
+  useProjectsListWithWA,
 } from '../MainFrame/EditorContainers/HomePage/CreateSection/utils';
 import AuthenticatedUserContext from '../Profile/AuthenticatedUserContext';
 import Refresh from '../UI/CustomSvgIcons/Refresh';
@@ -47,6 +48,7 @@ import optionalRequire from '../Utils/OptionalRequire';
 import TextButton from '../UI/TextButton';
 import Skeleton from '@material-ui/lab/Skeleton';
 import PreferencesContext from '../MainFrame/Preferences/PreferencesContext';
+import { useWallet } from '@solana/wallet-adapter-react';
 const electron = optionalRequire('electron');
 
 const isDesktop = !!electron;
@@ -310,7 +312,12 @@ const GamesList = ({
   const { isMobile } = useResponsiveWindowSize();
   const gameThumbnailWidth = getThumbnailWidth({ isMobile });
 
-  const allRecentProjectFiles = useProjectsListFor(null);
+  // const allRecentProjectFiles = useProjectsListFor(null);
+
+  const { publicKey } = useWallet();
+  const walletAddress = publicKey?.toString();
+
+  const allRecentProjectFiles = useProjectsListWithWA(walletAddress);
   const allDashboardItems: ?(DashboardItem[]) = React.useMemo(
     () => {
       if (!games) return null;

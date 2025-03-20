@@ -82,8 +82,9 @@ const StoreSection = ({
         }
         displayPromotions
         onOpenProfile={onOpenProfile}
+        ComingSoon
       />
-      {(openedAssetPack || openedAssetShortHeader) && (
+      {/* {(openedAssetPack || openedAssetShortHeader) && (
         <Line justifyContent="flex-end">
           <RaisedButton
             primary
@@ -114,7 +115,7 @@ const StoreSection = ({
             }
           />
         </Line>
-      )}
+      )} */}
       {project &&
         isAssetPackDialogInstallOpen &&
         !!displayedAssetShortHeaders.length && (

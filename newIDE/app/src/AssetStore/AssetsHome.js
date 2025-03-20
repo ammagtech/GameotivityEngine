@@ -376,7 +376,7 @@ export const AssetsHome = React.forwardRef<Props, AssetsHomeInterface>(
           }
         }}
       >
-        {/* {openedShopCategory ? null : (
+        {openedShopCategory ? null : (
           <>
             <Column>
               <Line>
@@ -474,7 +474,7 @@ export const AssetsHome = React.forwardRef<Props, AssetsHomeInterface>(
           spacing={cellSpacing}
         >
           {displayedStandAloneTiles}
-        </GridList> */}
+        </GridList>
       </ScrollView>
     );
   }

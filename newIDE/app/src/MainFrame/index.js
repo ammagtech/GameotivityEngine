@@ -198,6 +198,7 @@ import { type ObjectWithContext } from '../ObjectsList/EnumerateObjects';
 import useGamesList from '../GameDashboard/UseGamesList';
 import useCapturesManager from './UseCapturesManager';
 import useHomepageWitchForRouting from './UseHomepageWitchForRouting';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 const GD_STARTUP_TIMES = global.GD_STARTUP_TIMES || [];
 
@@ -471,6 +472,9 @@ const MainFrame = (props: Props) => {
   ] = React.useState<?string>(null);
 
   const { getAuthenticatedPlayerForPreview } = useAuthenticatedPlayer();
+
+  const { publicKey } = useWallet();
+  const walletAddress = publicKey ? publicKey.toString() : null;
 
   // This is just for testing, to check if we're getting the right state
   // and gives us an idea about the number of re-renders.
@@ -2553,7 +2557,6 @@ const MainFrame = (props: Props) => {
       if (!currentProject) return;
 
       saveUiSettings(state.editorTabs);
-
       // Protect against concurrent saves, which can trigger issues with the
       // file system.
       if (isSavingProject) {
@@ -2580,6 +2583,8 @@ const MainFrame = (props: Props) => {
         getWriteErrorMessage,
         canFileMetadataBeSafelySavedAs,
       } = newStorageProviderOperations;
+      console.log(newStorageProviderOperations);
+
       if (!onSaveProjectAs) {
         // The new storage provider can't even save as. It's strange that it was even
         // selected here.
@@ -2628,7 +2633,7 @@ const MainFrame = (props: Props) => {
             }
           );
 
-          if (!canProjectBeSafelySavedAs) return;
+          if (!canProjectBeSafelySavedAs) return 
         }
 
         let originalProjectUuid = null;
@@ -2663,11 +2668,12 @@ const MainFrame = (props: Props) => {
                   oldStorageProvider,
                   oldStorageProviderOperations,
                   authenticatedUser,
+                  walletAddress,
+
                 });
             },
           }
         );
-
         if (!wasSaved) {
           _replaceSnackMessage(i18n._(t`An error occurred. Please try again.`));
           if (originalProjectName) currentProject.setName(originalProjectName);
@@ -2763,6 +2769,7 @@ const MainFrame = (props: Props) => {
       showAlert,
       showConfirmation,
       gamesList,
+      walletAddress, // Add walletAddress to dependencies
     ]
   );
 

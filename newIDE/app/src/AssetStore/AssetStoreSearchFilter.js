@@ -75,7 +75,7 @@ export class AssetPackTypeStoreSearchFilter
   receivedAssetPacks: Array<PrivateAssetPack>;
 
   constructor({
-    isFree = false,
+    isFree = true,
     isPremium = false,
     isOwned = false,
     receivedAssetPacks = [],

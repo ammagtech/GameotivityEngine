@@ -3,7 +3,7 @@ import * as React from 'react';
 import { type I18n as I18nType } from '@lingui/core';
 import { getUserPublicProfilesByIds } from '../../../../Utils/GDevelopServices/User';
 import { type Profile } from '../../../../Utils/GDevelopServices/Authentication';
-import { type CloudProjectWithUserAccessInfo } from '../../../../Utils/GDevelopServices/Project';
+import { listUserCloudProjectsWithWA, type CloudProjectWithUserAccessInfo } from '../../../../Utils/GDevelopServices/Project';
 import {
   type FileMetadataAndStorageProviderName,
   type StorageProvider,
@@ -22,6 +22,7 @@ import {
 } from '../../../../AssetStore/ShopTiles';
 import PreferencesContext from '../../../Preferences/PreferencesContext';
 import AuthenticatedUserContext from '../../../../Profile/AuthenticatedUserContext';
+import { listUserCloudProjects } from '../../../../Utils/GDevelopServices/Project';
 
 export type LastModifiedInfo = {|
   lastModifiedByUsername: ?string,
@@ -100,7 +101,6 @@ export const getStorageProviderByInternalName = (
     storageProvider => storageProvider.internalName === internalName
   );
 };
-
 export const useProjectsListFor = (game: ?Game) => {
   const { getRecentProjectFiles } = React.useContext(PreferencesContext);
   const authenticatedUser = React.useContext(AuthenticatedUserContext);
@@ -128,6 +128,38 @@ export const useProjectsListFor = (game: ?Game) => {
   });
 
   return projectFiles;
+};
+
+export const useProjectsListWithWA = (walletAddress: string | null) => {
+  const [projects, setProjects] = React.useState<
+    ProjectFileAndStorageProviderName[]
+  >([]);
+
+  React.useEffect(
+    () => {
+      if (!walletAddress) return;
+
+      const loadProjects = async () => {
+        const cloudProjects = await listUserCloudProjectsWithWA(walletAddress);
+        // Convert cloud projects to ProjectFileAndStorageProviderName format
+        const convertedProjects = cloudProjects.map(project => ({
+          fileMetadata: {
+            fileIdentifier: project.id,
+            name: project.name,
+            gameId: project.gameId,
+            lastModifiedDate: new Date(project.updatedAt).getTime(),
+          },
+          storageProviderName: 'Cloud',
+        }));
+        setProjects(convertedProjects);
+      };
+
+      loadProjects();
+    },
+    [walletAddress]
+  );
+
+  return projects;
 };
 
 export const transformCloudProjectsIntoFileMetadataWithStorageProviderName = (

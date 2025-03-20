@@ -141,7 +141,7 @@ export const listListedPrivateAssetPacks = async (): Promise<
 export const listListedPrivateGameTemplates = async (): Promise<
   Array<PrivateGameTemplateListingData>
 > => {
-  throw new Error('not implemented yet');
+  // throw new Error('not implemented yet');
   const response = await client.get('/game-template');
   const gameTemplates = response.data;
   if (!Array.isArray(gameTemplates)) {
@@ -363,7 +363,7 @@ export const listProductLicenses = async ({
 }: {|
   productType: 'asset-pack' | 'game-template',
 |}): Promise<ProductLicense[]> => {
-  throw new Error('not implemented yet');
+  // throw new Error('not implemented yet');
   const response = await client.get('/product-license', {
     params: {
       productType,
